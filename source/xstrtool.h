@@ -10,6 +10,43 @@
 
 namespace xstrtool
 {
+    // Makes std::format be compatible with std::string_views and such...
+/*
+    template<typename T, std::size_t N, typename... T_ARGS>
+    inline auto format(const T(&fmt)[N], T_ARGS&&... Args)
+    {
+        if constexpr (std::is_same_v<T, char>)
+        {
+            return std::string(std::format(std::basic_format_string<T, T_ARGS...>{fmt}, std::forward<T_ARGS>(Args)...));
+        }
+        else if constexpr (std::is_same_v<T, wchar_t>)
+        {
+            return std::wstring(std::format(std::basic_format_string<T, T_ARGS...>{fmt}, std::forward<T_ARGS>(Args)...));
+        }
+        else
+        {
+            static_assert(std::is_same_v<T, char> || std::is_same_v<T, wchar_t>, "Unsupported character type for format string");
+        }
+    }
+
+    template<typename T, std::size_t N, typename... T_ARGS>
+    auto format(const T(&Fmt)[N], const T_ARGS&... Args)
+    {
+        if constexpr (std::is_same_v<T, char>)
+        {
+            return std::string(std::vformat(Fmt, std::make_format_args(Args...)));
+        }
+        else if constexpr (std::is_same_v<T, wchar_t>)
+        {
+            return std::wstring(std::vformat(Fmt, std::make_format_args(Args...)));
+        }
+        else
+        {
+            static_assert(std::is_same_v<T, char> || std::is_same_v<T, wchar_t>, "Unsupported character type for format string");
+        }
+    }
+    */
+
     // Converts a single char to lowercase (English ASCII only).
     // @param Char The character to convert.
     // @return The lowercase equivalent if uppercase letter; otherwise unchanged.
@@ -61,6 +98,30 @@ namespace xstrtool
     // @param Input Null-terminated wide string.
     // @return Converted narrow string.
     std::string To(const wchar_t* Input) noexcept;
+
+    // Copies n characters from a string view to a new string.
+    // @param Source Source string view.
+    // @param N Number of characters to copy.
+    // @return New string containing up to N characters from Source.
+    std::string CopyN(const std::string_view Source, std::size_t N) noexcept;
+
+    // Copies n characters from a null-terminated string to a new string.
+    // @param Source Null-terminated source string.
+    // @param N Number of characters to copy.
+    // @return New string containing up to N characters from Source.
+    std::string CopyN(const char* Source, std::size_t N) noexcept;
+
+    // Copies n characters from a wide string view to a new wide string.
+    // @param Source Source wide string view.
+    // @param N Number of characters to copy.
+    // @return New wide string containing up to N characters from Source.
+    std::wstring CopyN(const std::wstring_view Source, std::size_t N) noexcept;
+
+    // Copies n characters from a null-terminated wide string to a new wide string.
+    // @param Source Null-terminated wide source string.
+    // @param N Number of characters to copy.
+    // @return New wide string containing up to N characters from Source.
+    std::wstring CopyN(const wchar_t* Source, std::size_t N) noexcept;
 
     // Creates a lowercase copy of the narrow string_view (English ASCII).
     // @param InputView Input string view.
@@ -169,6 +230,34 @@ namespace xstrtool
     // @param Pos Starting position (default 0).
     // @return Position if found; std::wstring::npos otherwise.
     std::size_t findI(const wchar_t* Haystack, const wchar_t* Needle, const std::size_t Pos = 0) noexcept;
+
+    // Finds last substring position in haystack case-insensitively (English ASCII).
+    // @param Haystack Haystack string view.
+    // @param Needle Needle string view to find.
+    // @param Pos Starting position for reverse search (default std::string::npos, end of Haystack).
+    // @return Last position if found; std::string::npos otherwise.
+    std::size_t rfindI(const std::string_view Haystack, const std::string_view Needle, std::size_t Pos = std::string::npos) noexcept;
+
+    // Finds last substring position in null-terminated haystack case-insensitively (English ASCII).
+    // @param Haystack Null-terminated haystack string.
+    // @param Needle Null-terminated needle string to find.
+    // @param Pos Starting position for reverse search (default std::string::npos, end of Haystack).
+    // @return Last position if found; std::string::npos otherwise.
+    std::size_t rfindI(const char* Haystack, const char* Needle, std::size_t Pos = std::string::npos) noexcept;
+
+    // Finds last substring position in wide haystack case-insensitively (English ASCII).
+    // @param Haystack Haystack wide string view.
+    // @param Needle Needle wide string view to find.
+    // @param Pos Starting position for reverse search (default std::wstring::npos, end of Haystack).
+    // @return Last position if found; std::wstring::npos otherwise.
+    std::size_t rfindI(const std::wstring_view Haystack, const std::wstring_view Needle, std::size_t Pos = std::wstring::npos) noexcept;
+
+    // Finds last substring position in null-terminated wide haystack case-insensitively (English ASCII).
+    // @param Haystack Null-terminated wide haystack string.
+    // @param Needle Null-terminated wide needle string to find.
+    // @param Pos Starting position for reverse search (default std::wstring::npos, end of Haystack).
+    // @return Last position if found; std::wstring::npos otherwise.
+    std::size_t rfindI(const wchar_t* Haystack, const wchar_t* Needle, std::size_t Pos = std::wstring::npos) noexcept;
 
     // Checks if narrow haystack starts with needle case-insensitively (English ASCII).
     // @param Haystack Haystack string view.

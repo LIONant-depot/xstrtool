@@ -48,6 +48,42 @@ namespace xstrtool
     }
 
     //--------------------------------------------------------------------------------
+
+    std::string CopyN(const std::string_view Source, std::size_t N) noexcept
+    {
+        std::string Result;
+        Result.resize(std::min(N, Source.size()));
+        std::copy_n(Source.begin(), Result.size(), Result.begin());
+        return Result;
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::string CopyN(const char* Source, std::size_t N) noexcept
+    {
+        assert(Source != nullptr && "Source string is null");
+        return CopyN(std::string_view(Source), N);
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::wstring CopyN(const std::wstring_view Source, std::size_t N) noexcept
+    {
+        std::wstring Result;
+        Result.resize(std::min(N, Source.size()));
+        std::copy_n(Source.begin(), Result.size(), Result.begin());
+        return Result;
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::wstring CopyN(const wchar_t* Source, std::size_t N) noexcept
+    {
+        assert(Source != nullptr && "Source wide string is null");
+        return CopyN(std::wstring_view(Source), N);
+    }
+
+    //--------------------------------------------------------------------------------
     std::string ToLowerCopy(const std::string_view InputView) noexcept
     {
         std::string Result(InputView);
@@ -367,6 +403,118 @@ namespace xstrtool
         assert(Haystack != nullptr && "Haystack wide string is null");
         assert(Needle != nullptr && "Needle wide string is null");
         return findI(std::wstring_view(Haystack), std::wstring_view(Needle), Pos);
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t rfindI(const std::string_view Haystack, const std::string_view Needle, const std::size_t Pos) noexcept
+    {
+        assert(Pos == std::string::npos || Pos <= Haystack.size() && "Starting position exceeds haystack length");
+        if (Needle.empty())
+        {
+            return Pos == std::string::npos ? Haystack.size() : std::min(Pos, Haystack.size());
+        }
+        if (Needle.size() > Haystack.size())
+        {
+            return std::string::npos;
+        }
+        std::size_t StartPos = Pos == std::string::npos ? Haystack.size() - Needle.size() : std::min(Pos, Haystack.size() - Needle.size());
+
+        if constexpr (optimized_sse_v)
+        {
+            std::string LowerNeedle = ToLowerCopy(Needle);
+            const char* Hay = Haystack.data();
+            const char* Ndl = LowerNeedle.data();
+            __m128i LowerMask = _mm_set1_epi8(32);
+            __m128i UpperA = _mm_set1_epi8('A' - 1);
+            __m128i UpperZ = _mm_set1_epi8('Z' + 1);
+            for (std::size_t i = StartPos; i <= StartPos; --i)
+            {
+                bool Match = true;
+                for (std::size_t k = 0; k < Needle.size() / 16 * 16; k += 16)
+                {
+                    __m128i Vh = _mm_loadu_si128(reinterpret_cast<const __m128i*>(Hay + i + k));
+                    __m128i Vn = _mm_loadu_si128(reinterpret_cast<const __m128i*>(Ndl + k));
+                    __m128i MaskH = _mm_and_si128(_mm_cmpgt_epi8(Vh, UpperA), _mm_cmpgt_epi8(UpperZ, Vh));
+                    Vh = _mm_or_si128(Vh, _mm_and_si128(MaskH, LowerMask));
+                    __m128i Eq = _mm_cmpeq_epi8(Vh, Vn);
+                    if (_mm_movemask_epi8(Eq) != 0xFFFF)
+                    {
+                        Match = false;
+                        break;
+                    }
+                }
+                if (Match)
+                {
+                    for (std::size_t k = Needle.size() / 16 * 16; k < Needle.size(); ++k)
+                    {
+                        if (ToLower(Haystack[i + k]) != LowerNeedle[k])
+                        {
+                            Match = false;
+                            break;
+                        }
+                    }
+                }
+                if (Match) return i;
+                if (i == 0) break;
+            }
+            return std::string::npos;
+        }
+        else
+        {
+            for (std::size_t i = StartPos; i <= StartPos; --i)
+            {
+                if (CompareI(Haystack.substr(i, Needle.size()), Needle) == 0)
+                {
+                    return i;
+                }
+                if (i == 0) break;
+            }
+            return std::string::npos;
+        }
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t rfindI(const char* Haystack, const char* Needle, const std::size_t Pos) noexcept
+    {
+        assert(Haystack != nullptr && "Haystack string is null");
+        assert(Needle != nullptr && "Needle string is null");
+        return rfindI(std::string_view(Haystack), std::string_view(Needle), Pos);
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t rfindI(const std::wstring_view Haystack, const std::wstring_view Needle, const std::size_t Pos) noexcept
+    {
+        assert(Pos == std::wstring::npos || Pos <= Haystack.size() && "Starting position exceeds haystack length");
+        if (Needle.empty())
+        {
+            return Pos == std::wstring::npos ? Haystack.size() : std::min(Pos, Haystack.size());
+        }
+        if (Needle.size() > Haystack.size())
+        {
+            return std::wstring::npos;
+        }
+        std::size_t StartPos = Pos == std::wstring::npos ? Haystack.size() - Needle.size() : std::min(Pos, Haystack.size() - Needle.size());
+        for (std::size_t i = StartPos + 1; i > 0; --i)
+        {
+            std::size_t j = i - 1;
+            if (CompareI(Haystack.substr(j, Needle.size()), Needle) == 0)
+            {
+                return j;
+            }
+        }
+        return std::wstring::npos;
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t rfindI(const wchar_t* Haystack, const wchar_t* Needle, const std::size_t Pos) noexcept
+    {
+        assert(Haystack != nullptr && "Haystack wide string is null");
+        assert(Needle != nullptr && "Needle wide string is null");
+        return rfindI(std::wstring_view(Haystack), std::wstring_view(Needle), Pos);
     }
 
     //--------------------------------------------------------------------------------

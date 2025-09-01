@@ -383,13 +383,49 @@ namespace xstrtool::unit_test
         assert(StringToDouble("") == 0.0);
     }
 
+    void TestRFindI()
+    {
+        assert(xstrtool::rfindI("Hello World Hello", "hello") == 12);
+        assert(xstrtool::rfindI("Hello World Hello", "WORLD") == 6);
+        assert(xstrtool::rfindI("abc", "d") == std::string::npos);
+        assert(xstrtool::rfindI("", "a") == std::string::npos);
+        assert(xstrtool::rfindI("abc", "") == 3);
+        assert(xstrtool::rfindI("Hello World", "o", 7) == 7);
+        assert(xstrtool::rfindI("Hello World", "o", 3) == std::string::npos);
+        assert(xstrtool::rfindI(L"Hello World Hello", L"hello") == 12);
+        assert(xstrtool::rfindI(L"Hello World Hello", L"WORLD") == 6);
+        assert(xstrtool::rfindI(L"abc", L"d") == std::wstring::npos);
+        assert(xstrtool::rfindI(L"", L"a") == std::wstring::npos);
+        assert(xstrtool::rfindI(L"abc", L"") == 3);
+        assert(xstrtool::rfindI(L"Hello World", L"o", 7) == 7);
+    }
+
+    void TestCopyN()
+    {
+        // Narrow
+        assert(CopyN("Hello World", 5) == "Hello");
+        assert(CopyN("abc", 5) == "abc");
+        assert(CopyN("", 3) == "");
+        assert(CopyN(std::string_view("Hello World"), 7) == "Hello W");
+        assert(CopyN("abc", 0) == "");
+
+        // Wide
+        assert(CopyN(L"Hello World", 5) == L"Hello");
+        assert(CopyN(L"abc", 5) == L"abc");
+        assert(CopyN(L"", 3) == L"");
+        assert(CopyN(std::wstring_view(L"Hello World"), 7) == L"Hello W");
+        assert(CopyN(L"abc", 0) == L"");
+    }
+
     void RunAllTests()
     {
         TestTo();
+        TestCopyN();
         TestToLower();
         TestToUpper();
         TestCompareI();
         TestFindI();
+        TestRFindI();
         TestStartsWithI();
         TestEndsWithI();
         TestContainsI();
