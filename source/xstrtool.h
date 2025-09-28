@@ -10,6 +10,28 @@
 
 namespace xstrtool
 {
+    template<typename T, std::size_t N, typename... Args>
+    inline void print(const T(&fmt_str)[N], Args&&... args)
+    {
+        static_assert(std::is_same_v<T, char> || std::is_same_v<T, wchar_t>,
+            "Format string must be of type char or wchar_t.");
+
+        if constexpr (std::is_same_v<T, char>) 
+        {
+            static_assert((((!std::is_convertible_v<Args, std::wstring>) && (!std::is_convertible_v<Args, std::wstring_view>) && (!std::is_convertible_v<Args, const wchar_t*>)) && ...),
+                "Arguments must not be wchar_t-based when using char format string.");
+
+            printf( "%s", std::vformat(fmt_str, std::make_format_args(args...)).c_str() );
+        }
+        else 
+        {
+            static_assert((((!std::is_convertible_v<Args, std::string>) && (!std::is_convertible_v<Args, std::string_view>) && (!std::is_convertible_v<Args, const char*>)) && ...),
+                "Arguments must not be char-based when using wchar_t format string.");
+
+            wprintf( "%ls", std::vformat(fmt_str, std::make_wformat_args(args...)).c_str());
+        }
+    }
+
     // Makes std::format be compatible with std::string_views and such...
 /*
     template<typename T, std::size_t N, typename... T_ARGS>
