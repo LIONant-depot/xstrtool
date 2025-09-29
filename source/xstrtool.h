@@ -69,6 +69,24 @@ namespace xstrtool
     }
     */
 
+    inline
+    std::string_view getLastLine(const std::string_view str) noexcept
+    {
+        if (str.empty()) return std::string_view{};
+        auto pos = str.rfind('\n');
+        if (pos == std::string::npos) return str; // No newline, return entire string
+        return str.substr(pos + 1);               // View from last newline to end
+    }
+
+    inline
+    std::wstring_view getLastLine(const std::wstring_view str) noexcept
+    {
+        if (str.empty()) return std::wstring_view{};
+        auto pos = str.rfind(L'\n');
+        if (pos == std::string::npos) return str; // No newline, return entire string
+        return str.substr(pos + 1);               // View from last newline to end
+    }
+
     // Converts a single char to lowercase (English ASCII only).
     // @param Char The character to convert.
     // @return The lowercase equivalent if uppercase letter; otherwise unchanged.
