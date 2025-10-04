@@ -939,6 +939,24 @@ namespace xstrtool
     // @return Minimum number of edits to transform A to B.
     std::size_t LevenshteinDistance(const std::string_view A, const std::string_view B) noexcept;
 
+    // Damerau-Levenshtein distance, which adds transposition costs for adjacent characters, making predictions feel more natural.
+    // @param A First string view.
+    // @param B Second string view.
+    // @return Minimum number of edits to transform A to B with a natrual feel.
+    std::size_t DamerauLevenshteinDistance(const std::string_view A, const std::string_view B) noexcept;
+
+    // Damerau-Levenshtein distance, which adds transposition costs for adjacent characters, making predictions feel more natural.
+    // @param A First string view.
+    // @param B Second string view.
+    // @return Minimum number of edits to transform A to B with a natrual feel.
+    std::size_t DamerauLevenshteinDistanceI(const std::string_view A, const std::string_view B) noexcept;
+
+    // Substring Damerau-Levenshtein distance, takes into account the substrings, and adds transposition costs for adjacent characters, making predictions feel more natural.
+    // @param A First string view.
+    // @param B Second string view.
+    // @return Minimum number of edits to transform A to B with a natrual feel.
+    std::size_t SubstringDamerauLevenshteinDistanceI(std::string_view query, std::string_view candidate);
+
     // Computes CRC32 hash of string view.
     // @param Sv String view.
     // @return CRC32 hash value.

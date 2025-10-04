@@ -12,6 +12,7 @@
 #include <charconv>  // For std::from_chars
 #include <format>  // For std::format
 #include <chrono>
+#include <array>
 
 namespace xstrtool
 {
@@ -1513,6 +1514,225 @@ namespace xstrtool
             return Prev[LenB];
         }
     }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t DamerauLevenshteinDistance( std::string_view s1, std::string_view s2) noexcept
+    {
+        if constexpr (optimized_sse_v)
+        {
+            std::size_t m = s1.size(), n = s2.size();
+            if (m == 0) return n;
+            if (n == 0) return m;
+            if (m < n)
+            {
+                std::swap(s1, s2);
+                std::swap(m, n);
+            }
+
+            std::vector<std::size_t> matrix((m + 1) * (n + 1));
+            auto d = [&](std::size_t i, std::size_t j) -> std::size_t& { return matrix[i * (n + 1) + j]; };
+
+            std::size_t infinity = m + n;
+            d(0, 0) = infinity;
+            for (std::size_t i = 0; i <= m; ++i) 
+            {
+                d(i, 0) = infinity;
+                d(i, 1) = i;  // Note: adjusted for 1-based in original sketch
+            }
+
+            for (std::size_t j = 0; j <= n; ++j) 
+            {
+                d(0, j) = infinity;
+                d(1, j) = j;
+            }
+
+            // Assumes 8-bit chars
+            std::array<int,256> da;  
+            std::memset(da.data(), 0, sizeof(da));
+
+            for (std::size_t i = 1; i <= m; ++i) 
+            {
+                std::size_t db = 0;
+                for (std::size_t j = 1; j <= n; ++j) 
+                {
+                    assert(i >= 1 && j >= 1);
+                    const std::size_t i1   = da[static_cast<unsigned char>(s2[j - 1])];
+                    const std::size_t j1   = db;
+                    const std::size_t cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+                    if (cost == 0) db = j;
+                    d(i, j) = std::min({ d(i - 1, j - 1) + cost,
+                                         d(i, j - 1) + 1,
+                                         d(i - 1, j) + 1,
+                                         d(i1, j1) + (i - i1 - 1) + 1 + (j - j1 - 1) });
+                }
+                da[static_cast<unsigned char>(s1[i - 1])] = static_cast<int>(i);
+            }
+            return d(m, n);
+        }
+        else
+        {
+            std::size_t m = s1.size(), n = s2.size();
+            if (m == 0) return n;
+            if (n == 0) return m;
+
+            // Ensure n <= m for space
+            if (m < n)
+            {
+                std::swap(s1, s2);
+                std::swap(m, n);
+            }  
+
+            std::vector<std::size_t> prev_prev(n + 1);
+            std::vector<std::size_t> prev(n + 1);
+            std::vector<std::size_t> curr(n + 1);
+
+            for (std::size_t j = 0; j <= n; ++j) prev[j] = j;
+
+            for (std::size_t i = 1; i <= m; ++i) 
+            {
+                curr[0] = i;
+                for (std::size_t j = 1; j <= n; ++j) 
+                {
+                    const std::size_t cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+                    curr[j] = std::min({ curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost });
+                    if (i > 1 && j > 1 && s1[i - 1] == s2[j - 2] && s1[i - 2] == s2[j - 1]) 
+                    {
+                        // Transposition bounds
+                        assert(j >= 2 && i >= 2);
+
+                        // Transposition (cost 1)
+                        curr[j] = std::min(curr[j], prev_prev[j - 2] + 1);  
+                    }
+                }
+                prev_prev   = std::move(prev);
+                prev        = std::move(curr);
+            }
+            return prev[n];
+        }
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t DamerauLevenshteinDistanceI(std::string_view s1, std::string_view s2) noexcept
+    {
+        auto lower = [](char c) { return static_cast<char>(std::tolower(c)); };
+        std::size_t m = s1.size(), n = s2.size();
+
+        if (m == 0) return n;
+        if (n == 0) return m;
+        if (m < n)
+        {
+            std::swap(s1, s2);
+            std::swap(m, n);
+        }
+
+        std::vector<std::size_t> matrix((m + 1) * (n + 1));
+        auto d = [&](std::size_t i, std::size_t j) -> std::size_t& { return matrix[i * (n + 1) + j]; };
+        std::size_t infinity = m + n + 1;
+        d(0, 0) = infinity;
+        for (std::size_t i = 0; i <= m; ++i) 
+        {
+            d(i, 0) = infinity;
+            d(i, 1) = i;
+        }
+
+        for (std::size_t j = 0; j <= n; ++j) 
+        {
+            d(0, j) = infinity;
+            d(1, j) = j;
+        }
+
+        std::array<int, 256> da;
+        std::memset(da.data(), 0, sizeof(da));
+
+        for (std::size_t i = 1; i <= m; ++i) 
+        {
+            std::size_t db = 0;
+            for (std::size_t j = 1; j <= n; ++j) 
+            {
+                assert(i >= 1 && j >= 1);
+                char c2 = lower(s2[j - 1]);
+                const std::size_t   i1 = da[static_cast<unsigned char>(c2)];
+                const std::size_t   j1 = db;
+                const char          c1 = lower(s1[i - 1]);
+                std::size_t cost = (c1 == c2) ? 0 : 1;
+                if (cost == 0) db = j;
+                d(i, j) = std::min({ d(i - 1, j - 1) + cost,
+                                    d(i, j - 1) + 1,
+                                    d(i - 1, j) + 1,
+                                    d(i1, j1) + (i - i1 - 1) + 1 + (j - j1 - 1) });
+            }
+            da[static_cast<unsigned char>(lower(s1[i - 1]))] = static_cast<int>(i);
+        }
+
+        return d(m, n);
+    }
+
+    //--------------------------------------------------------------------------------
+
+    std::size_t SubstringDamerauLevenshteinDistanceI(std::string_view query, std::string_view candidate)
+    {
+        auto lower = [](char c) { return std::tolower(static_cast<unsigned char>(c)); };
+        std::size_t m = query.size(), n = candidate.size();
+
+        if (m == 0) return 0;
+        if (n == 0) return m;
+
+        std::vector<std::vector<std::size_t>> dp(m + 1, std::vector<std::size_t>(n + 1));
+
+        for (std::size_t i = 0; i <= m; ++i) dp[i][0] = i;
+        for (std::size_t j = 0; j <= n; ++j) dp[0][j] = 0;
+        for (std::size_t i = 1; i <= m; ++i) 
+        {
+            for (std::size_t j = 1; j <= n; ++j) 
+            {
+                std::size_t cost = (lower(query[i - 1]) == lower(candidate[j - 1])) ? 0 : 1;
+                dp[i][j] = std::min({ dp[i - 1][j] + 1, dp[i][j - 1] + 0, dp[i - 1][j - 1] + cost });
+                if (i > 1 && j > 1 && lower(query[i - 1]) == lower(candidate[j - 2]) && lower(query[i - 2]) == lower(candidate[j - 1])) 
+                {
+                    dp[i][j] = std::min(dp[i][j], dp[i - 2][j - 2] + 1);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+    /*
+    std::size_t SubstringDamerauLevenshteinDistanceI(std::string_view query, std::string_view candidate)
+    {
+        std::size_t m = query.size(), n = candidate.size();
+        assert(m >= 0 && n >= 0);
+        if (m == 0) return 0;
+        if (n == 0) return m;
+        std::vector<std::size_t> prev_prev(n + 1, 0);
+        std::vector<std::size_t> prev(n + 1, 0);
+        for (std::size_t i = 1; i <= m; ++i) {
+            std::vector<std::size_t> curr(n + 1, 0);
+            curr[0] = i;
+            for (std::size_t j = 1; j <= n; ++j) {
+                unsigned char q_char = static_cast<unsigned char>(query[i - 1]);
+                unsigned char c_char = static_cast<unsigned char>(candidate[j - 1]);
+                std::size_t cost = (std::tolower(q_char) == std::tolower(c_char)) ? 0 : 1;
+                curr[j] = std::min({ curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost });
+                if (i > 1 && j > 1) {
+                    unsigned char q_prev = static_cast<unsigned char>(query[i - 2]);
+                    unsigned char c_prev = static_cast<unsigned char>(candidate[j - 2]);
+                    if (std::tolower(q_char) == std::tolower(c_prev) && std::tolower(q_prev) == std::tolower(c_char)) {
+                        assert(j >= 2 && i >= 2);
+                        curr[j] = std::min(curr[j], prev_prev[j - 2] + 1);
+                    }
+                }
+            }
+            prev_prev = prev;
+            prev = curr;
+        }
+        std::size_t min_dist = prev[0];
+        for (std::size_t j = 1; j <= n; ++j) {
+            if (prev[j] < min_dist) min_dist = prev[j];
+        }
+        return min_dist;
+    }
+    */
 
     //--------------------------------------------------------------------------------
     uint32_t CRC32(const std::string_view Sv) noexcept
