@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <span>
 #include <cassert>
 
 namespace xstrtool
@@ -162,6 +163,12 @@ namespace xstrtool
     // @param N Number of characters to copy.
     // @return New wide string containing up to N characters from Source.
     std::wstring CopyN(const wchar_t* Source, std::size_t N) noexcept;
+
+    // Copies n characters from a std::string_view to a null-terminated string.
+    // @param Dest a span of chars where the source string will be copied
+    // @param Source std::string_view
+    // @return Number of copied characters
+    std::size_t Copy(std::span<char> Dest, std::string_view Source ) noexcept;
 
     // Creates a lowercase copy of the narrow string_view (English ASCII).
     // @param InputView Input string view.

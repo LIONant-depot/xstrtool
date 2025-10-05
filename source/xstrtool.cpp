@@ -85,6 +85,21 @@ namespace xstrtool
     }
 
     //--------------------------------------------------------------------------------
+
+    std::size_t Copy(std::span<char> Dest, std::string_view Source) noexcept
+    {
+        if ( Dest.empty() ) return 0;
+
+        // Copy up to buffer size minus 1 to leave space for null terminator
+        std::size_t copy_len = std::min(Source.size(), Dest.size() - 1);
+        std::copy_n(Source.begin(), copy_len, Dest.begin());
+
+        // Null-terminate
+        Dest[copy_len] = '\0';
+        return copy_len;
+    }
+
+    //--------------------------------------------------------------------------------
     std::string ToLowerCopy(const std::string_view InputView) noexcept
     {
         std::string Result(InputView);
