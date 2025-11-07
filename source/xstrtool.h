@@ -774,6 +774,15 @@ namespace xstrtool
         return (Pos != std::wstring_view::npos) ? Path.substr(Pos + 1) : Path;
     }
 
+    // Gets the file name with extension from wide path view.
+    // This is another name for PathBaseName but more intuitive...
+    // @param Path Wide path string view.
+    // @return Base name wide view.
+    inline std::wstring_view PathFileName(const std::wstring_view Path) noexcept
+    {
+        return PathBaseName(Path);
+    }
+
     // Gets the base name from null-terminated wide path.
     // @param Path Null-terminated wide path string.
     // @return Base name wide view.
@@ -781,6 +790,15 @@ namespace xstrtool
     {
         assert(Path != nullptr && "Path wide string is null");
         return PathBaseName(std::wstring_view(Path));
+    }
+
+    // Gets the file name with extension from wide path view.
+    // This is another name for PathBaseName but more intuitive...
+    // @param Path Wide path string view.
+    // @return Base name wide view.
+    inline std::wstring_view PathFileName(const wchar_t* Path) noexcept
+    {
+        return PathBaseName(Path);
     }
 
     // Gets the directory name from wide path view.
