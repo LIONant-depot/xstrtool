@@ -11,6 +11,13 @@
 
 namespace xstrtool
 {
+    // Always-failing static_assert (dependent on T, C++20-compatible, works pre-C++20 too)
+    template <typename T>
+    constexpr bool always_false_v = false;
+
+    //
+    // This is a safer way to print strings, with better errors 
+    //
     template<typename T, std::size_t N, typename... Args>
     inline void print(const T(&fmt_str)[N], Args&&... args)
     {
@@ -24,12 +31,16 @@ namespace xstrtool
 
             printf( "%s", std::vformat(fmt_str, std::make_format_args(args...)).c_str() );
         }
-        else 
+        else if constexpr (std::is_same_v<T, wchar_t>)
         {
             static_assert((((!std::is_convertible_v<Args, std::string>) && (!std::is_convertible_v<Args, std::string_view>) && (!std::is_convertible_v<Args, const char*>)) && ...),
                 "Arguments must not be char-based when using wchar_t format string.");
 
-            wprintf( "%ls", std::vformat(fmt_str, std::make_wformat_args(args...)).c_str());
+            wprintf( L"%ls", std::vformat(std::wstring_view(fmt_str), std::make_wformat_args(args...)).c_str());
+        }
+        else
+        {
+            static_assert(always_false_v<T>, "Unsupported format string type (unreachable).");
         }
     }
 
