@@ -1170,6 +1170,9 @@ namespace xstrtool
             Start = 2;
             if (Path.size() > 2 && (Path[2] == '/' || Path[2] == '\\')) Start = 3;
         }
+        // A UNC path (\\server\share\... or //server/share/...) keeps its two leading separators: with one it would be a folder of the current drive
+        // (a Windows compiler run from WSL gets the project as \\wsl.localhost\<distro>\...).
+        const bool IsUnc = !IsDrive && Path.size() >= 2 && (Path[0] == '/' || Path[0] == '\\') && (Path[1] == '/' || Path[1] == '\\');
         for (std::size_t i = Start; i < Path.size(); ++i)
         {
             if (Path[i] == '/' || Path[i] == '\\')
@@ -1192,6 +1195,10 @@ namespace xstrtool
         {
             Result = std::string(Drive);
             if (!ResultParts.empty()) Result += '/';
+        }
+        else if (IsUnc)
+        {
+            Result = "//";
         }
         else if (IsAbsolute)
         {
@@ -1257,6 +1264,9 @@ namespace xstrtool
             Start = 2;
             if (Path.size() > 2 && (Path[2] == L'/' || Path[2] == L'\\')) Start = 3;
         }
+        // A UNC path (\\server\share\... or //server/share/...) keeps its two leading separators: with one it would be a folder of the current drive
+        // (a Windows compiler run from WSL gets the project as \\wsl.localhost\<distro>\...).
+        const bool IsUnc = !IsDrive && Path.size() >= 2 && (Path[0] == L'/' || Path[0] == L'\\') && (Path[1] == L'/' || Path[1] == L'\\');
         for (std::size_t i = Start; i < Path.size(); ++i)
         {
             if (Path[i] == L'/' || Path[i] == L'\\')
@@ -1279,6 +1289,10 @@ namespace xstrtool
         {
             Result = std::wstring(Drive);
             if (!ResultParts.empty()) Result += L'/';
+        }
+        else if (IsUnc)
+        {
+            Result = L"//";
         }
         else if (IsAbsolute)
         {
