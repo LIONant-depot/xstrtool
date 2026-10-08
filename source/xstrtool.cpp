@@ -1892,15 +1892,15 @@ namespace xstrtool
             }
             else if ((Utf8[i] & 0xE0) == 0xC0 && i + 1 < Utf8.size()) 
             { // 2-byte
-                codepoint = ((Utf8[i++] & 0x1F) << 6) | (Utf8[i++] & 0x3F);
+                codepoint = ((Utf8[i] & 0x1F) << 6) | (Utf8[i + 1] & 0x3F); i += 2;
             }
             else if ((Utf8[i] & 0xF0) == 0xE0 && i + 2 < Utf8.size()) 
             { // 3-byte
-                codepoint = ((Utf8[i++] & 0x0F) << 12) | ((Utf8[i++] & 0x3F) << 6) | (Utf8[i++] & 0x3F);
+                codepoint = ((Utf8[i] & 0x0F) << 12) | ((Utf8[i + 1] & 0x3F) << 6) | (Utf8[i + 2] & 0x3F); i += 3;
             }
             else if ((Utf8[i] & 0xF8) == 0xF0 && i + 3 < Utf8.size()) 
             { // 4-byte
-                codepoint = ((Utf8[i++] & 0x07) << 18) | ((Utf8[i++] & 0x3F) << 12) | ((Utf8[i++] & 0x3F) << 6) | (Utf8[i++] & 0x3F);
+                codepoint = ((Utf8[i] & 0x07) << 18) | ((Utf8[i + 1] & 0x3F) << 12) | ((Utf8[i + 2] & 0x3F) << 6) | (Utf8[i + 3] & 0x3F); i += 4;
             }
             else 
             {
