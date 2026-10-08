@@ -6,7 +6,9 @@
 #include <chrono>
 #include <format>
 #include <immintrin.h>
+#if defined(_MSC_VER)
 #include <intrin.h>  // For MSVC _BitScanForward/_BitScanReverse
+#endif
 #include <locale>
 #include <vector>
 #include <charconv>  // For std::from_chars
